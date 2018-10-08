@@ -2,15 +2,17 @@
 title: "1002_visualization2"
 author: "Jingqi Song"
 date: "October 2, 2018"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-devtools::install_github("thomasp85/patchwork")
+knitr::opts_chunk$set(
+  fig.width=6,
+  fig.asp=.6,
+  out.width='90%'
+)
 library(tidyverse)
-library(ggridges)
-library(patchwork)
+
 ```
 
 ```{r import}
@@ -41,10 +43,162 @@ ggplot(weather_df, aes(x = tmin, y = tmax)) +
     caption = "Data from the rnoaa package" 
   )+
     scale_x_continuous(breaks = c(-15, 0, 15), 
-                     labels = c("-15º C", "0", "15"))
+                     labels = c("-15º C", "0", "15"),
+                     limits = c(-20, 42)
+                     )+
+  scale_y_continuous(trans = "sqrt", 
+                     position = "right")
 
 
 ```
+
+## colors and themes
+
+adjust colors
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5)+
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package" 
+  )+
+  viridis::scale_color_viridis(
+    name = "Location", 
+    discrete = TRUE
+  )+
+  theme(legend.position = 'bottom')
+
+```
+
+## theme
+
+```{r}
+
+ggplot(weather_df, aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5)+
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package" 
+  )+
+  viridis::scale_color_viridis(
+    name = "Location", 
+    discrete = TRUE
+  )+
+  theme_minimal()
+
+```
+bw: black and white
+classic: no lines
+minimal: no box outside
+
+learning assessment
+```{r}
+ggplot(weather_df, aes(x = date, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5)+
+  labs(
+    title = "Temperature plot",
+    x = "Date",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package" 
+  )+
+  viridis::scale_color_viridis(name='Location', discrete = TRUE)+
+  theme_minimal()+
+  theme(legend.position = 'bottom')
+
+```
+
+## arguments to 'geom_*'
+
+ggplot of the first dataset
+stack a new layer of another dataset on the top
+
+```{r}
+central_park = 
+  weather_df %>% 
+  filter(name == "CentralPark_NY")
+
+waikiki = 
+  weather_df %>% 
+  filter(name == "Waikiki_HA")
+
+ggplot(waikiki, aes(x = date, y = tmax, color = name)) + 
+  geom_point() + 
+  geom_line(data = central_park)
+
+```
+
+## patchwork
+
+patchwork format: https://github.com/thomasp85/patchwork
+
+```{r}
+tmax_tmin_p = ggplot(weather_df, aes(x = tmax, y = tmin, color = name)) + 
+  geom_point(alpha = .5) +
+  theme(legend.position = "none")
+
+prcp_dens_p = weather_df %>% 
+  filter(prcp > 0) %>% 
+  ggplot(aes(x = prcp, fill = name)) + 
+  geom_density(alpha = .5) + 
+  theme(legend.position = "none")
+
+tmax_date_p = ggplot(weather_df, aes(x = date, y = tmax, color = name)) + 
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  theme(legend.position = "bottom")
+
+(tmax_tmin_p + prcp_dens_p) / tmax_date_p
+
+
+```
+
+## data manipulation
+
+factors
+
+```{r}
+ ggplot(weather_df,aes(x = name, y = tmax,fill=name)) + 
+  geom_violin()
+```
+
+factor_relevel: order by hand
+
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+order through tmax value
+
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+separate by location, max and min in one graph
+
+```{r}
+weather_df %>%
+  select(name, tmax, tmin) %>% 
+  gather(key = observation, value = temp, tmax:tmin) %>% 
+  ggplot(aes(x = temp, fill = observation)) +
+  geom_density(alpha = .5) + 
+  facet_grid(~name) + 
+  viridis::scale_fill_viridis(discrete = TRUE)
+```
+
+
 
 
 
