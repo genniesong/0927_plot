@@ -29,7 +29,81 @@ weather_df =
                       USC00519397 = "Waikiki_HA",
                       USS0023B17S = "Waterhole_WA"),
     tmin = tmin / 10,
-    tmax = tmax / 10) %>%
+    tmax = tmax / 10,
+    month = lubridate::floor_date(date, unit = "month")) %>%
   select(name, id, everything())
 weather_df
 ```
+
+## start grouping
+
+grouping structure is kind of invisible.
+Groups:   name, month [36]
+```{r setup, include=FALSE}
+weather_df %>% 
+  group_by(name,month) %>% 
+  ungroup
+```
+
+number for each group. count first
+```{r setup, include=FALSE}
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarize(number = n())
+
+weather_df %>% 
+  group_by(name) %>% 
+  summarize(number = n())
+
+weather_df %>% 
+  count(month)
+```
+
+## grouped summaries
+
+```{r setup, include=FALSE}
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarize(number = n(),
+            num_na = sum(is.na(tmax)),
+            mean_tmax = mean(tmax))
+
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarize(number = n(),
+            mean_tmax = mean(tmax,na.rm = TRUE),
+            median_prcp = median(prcp, na.rm=TRUE),
+            sd_tmin = sd(tmin,na.rm=TRUE)
+            )
+
+```
+
+still a tibble! plot
+plot 2 tibbles at once
+
+```{r setup, include=FALSE}
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarize(number = n(),
+            mean_tmax = mean(tmax,na.rm = TRUE),
+            median_prcp = median(prcp, na.rm=TRUE),
+            sd_tmin = sd(tmin,na.rm=TRUE)) %>% 
+ggplot(aes(x=month,y=mean_tmax,color=name))+
+  geom_point(alpha=.5)+
+  geom_line(data=month_df,aes(x=month,y=mean_tmax))
+
+```
+
+tidy is best for humans...
+
+```{r setup, include=FALSE}
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarize(mean_tmax = mean(tmax,na.rm = TRUE)) %>% 
+  spread(key=month,value=mean_tmax)
+
+
+```
+
+
+
