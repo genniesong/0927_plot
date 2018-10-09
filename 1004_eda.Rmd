@@ -39,7 +39,7 @@ weather_df
 
 grouping structure is kind of invisible.
 Groups:   name, month [36]
-```{r setup, include=FALSE}
+```{r}
 weather_df %>% 
   group_by(name,month) %>% 
   ungroup
@@ -61,7 +61,7 @@ weather_df %>%
 
 ## grouped summaries
 
-```{r setup, include=FALSE}
+```{r}
 weather_df %>% 
   group_by(name,month) %>% 
   summarize(number = n(),
@@ -81,7 +81,7 @@ weather_df %>%
 still a tibble! plot
 plot 2 tibbles at once
 
-```{r setup, include=FALSE}
+```{r}
 weather_df %>% 
   group_by(name,month) %>% 
   summarize(number = n(),
@@ -96,14 +96,59 @@ ggplot(aes(x=month,y=mean_tmax,color=name))+
 
 tidy is best for humans...
 
-```{r setup, include=FALSE}
+```{r setup}
 weather_df %>% 
   group_by(name,month) %>% 
   summarize(mean_tmax = mean(tmax,na.rm = TRUE)) %>% 
-  spread(key=month,value=mean_tmax)
-
-
+  spread(key=month,value=mean_tmax) 
 ```
+
+## grouped mutate
+
+```{r}
+weather_df %>% 
+  group_by(name,month) %>% 
+  mutate(mean_tmax = mean(tmax,na.rm = TRUE)) 
+```
+
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(mean_tmax = mean(tmax,na.rm = TRUE),
+         centered_tmax = tmax - mean_tmax) %>% 
+  ggplot(aes(x=date, y=centered_tmax, color=name))+
+  geom_point()
+```
+
+## window functions
+rank of original numbers
+
+```{r}
+weather_df %>% 
+  group_by(name, month) %>% 
+  mutate(tmax_rank = min_rank(desc(tmax))) %>% 
+  filter(tmax_rank < 2)
+```
+
+use lags:
+previous value
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(lag_tmax = lag(tmax))
+```
+
+##how neat is this
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(one_day_change = tmax - lag(tmax)) %>% 
+  summarize(sd_one_day_change = sd(one_day_change, na.rm=TRUE))
+```
+
 
 
 
